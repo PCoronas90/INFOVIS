@@ -1,0 +1,668 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:h="http://java.sun.com/jsf/html"
+	xmlns:ui="http://java.sun.com/jsf/facelets"
+	xmlns:c="http://java.sun.com/jstl/core"
+	xmlns:f="http://java.sun.com/jsf/core"    >
+	
+<head>
+ 	<title>RFC Searcher</title>
+ 	<link href="stile2.css" rel="stylesheet" type="text/css" />
+</head>
+
+<h:body>	
+<style>
+
+.node circle {
+  cursor: pointer;
+  stroke: #3182bd;
+  stroke-width: 1.5px;
+}
+
+.node text {
+  font: 8px sans-serif;
+  pointer-events: none;
+  text-anchor: middle;
+}
+
+line.link {
+  fill: none;
+  stroke: #9ecae1;
+  stroke-width: 1.5px;
+}
+
+div.tooltip {   
+  position: absolute;           
+  text-align: center;           
+                   
+                   
+  padding: 2px;             
+  font: 15px sans-serif;        
+  background: lightsteelblue;   
+  border: 0px;      
+  border-radius: 8px;           
+  pointer-events: none;         
+}
+</style>
+	<h:form>
+		
+
+		<div id="container">
+		
+			<h:panelGroup>
+			<div class="box left">
+			<h:graphicImage id="logo" value="/image/logoSearch.png" width="70" height="70" margin-left="2000" />
+				</div>
+				<div class="box center">
+				<h:inputText value="#{searcherBean.originalQuery}" size="50" required="true" requiredMessage="Inserisci una query" />
+				</div>
+				<div class="box right1" style="width: 50px;">
+				<h:commandButton value="Go!" action="#{searcherBean.search}" image="/image/cerca.png" />
+				</div>
+				
+			</h:panelGroup>
+
+			
+		</div>
+<div class="result">
+<h:panelGroup layout="block" style="width: 1380px;text-align: top;margin-top:20px;">    
+			Select Status :
+			<h:selectBooleanCheckbox value="#{searcherBean.informational}"  /> Informational
+			<h:selectBooleanCheckbox value="#{searcherBean.unknown}" /> Unknown
+			<h:selectBooleanCheckbox value="#{searcherBean.historic}" /> Historic
+			<h:selectBooleanCheckbox value="#{searcherBean.experimental}" /> Experimental
+			<h:selectBooleanCheckbox value="#{searcherBean.bestcurrent}" /> BestCurrentPractice
+			<h:selectBooleanCheckbox value="#{searcherBean.proposedstandard}" /> Proposed Standard
+			<h:selectBooleanCheckbox value="#{searcherBean.draftstandard}" /> Draft Standard
+			<h:selectBooleanCheckbox value="#{searcherBean.internetstandard}" /> Internet Standard
+			<h:selectOneMenu value="#{searcherBean.selectDateFrom}"> 
+			    || Select year :
+		 From <f:selectItem itemLabel="Any" itemValue="0" />
+	            <f:selectItems value="#{searcherBean.datesFrom}" />
+        </h:selectOneMenu>
+        <h:selectOneMenu value="#{searcherBean.selectDateTo}">
+		 To <f:selectItem itemLabel="Any" itemValue="0" />
+	            <f:selectItems value="#{searcherBean.datesTo}" />
+        </h:selectOneMenu>
+	         </h:panelGroup>		
+		<br /><br /><span style=" color: grey"> Risultati trovati per <b>"#{searcherBean.originalQuery}"</b>: #{searcherBean.numberOfResults} (#{searcherBean.searchTime} millisecondi)</span>
+
+ <br />
+ 
+
+ <br /><br />
+ 
+	
+
+ <script src="http://d3js.org/d3.v3.min.js"></script>
+
+ 
+ 
+ <c:set var="currentPage" value="#{searcherBean.currentPage}" />
+
+		<c:set var="result" value="#{currentPage.results}"/>
+ <c:set var="key" value="#{searcherBean.getRfc().keySet()}"/>
+		<c:set var="values" value="#{searcherBean.getRfc().values()}"/>
+			
+<div class="sig"></div>		
+
+
+
+ 
+<script>
+//var margin = {top: -5, right: -5, bottom: -5, left: -5};
+//var width =  1330 - margin.left - margin.right,
+//height = 600- margin.top - margin.bottom;
+
+
+var div = d3.select("body").append("div")   
+    .attr("class", "tooltip")               
+    .style("opacity", 0);
+    
+    
+var width = 1330,
+height = 600;
+var root;
+var i = 0;
+var clicked=false;
+var jsonAdd=[];
+
+
+var force = d3.layout.force()
+    .linkDistance(200)
+    .charge(-1500)
+    .friction(0.8)
+    .size([width, height])
+    .on("tick", tick);
+
+	
+var drag = force.drag()
+.on("dragstart", dragstart);
+
+var vis = d3.select("div.sig")
+.append("svg:svg")
+  .attr("width",1500)
+  .attr("height", 700)
+  .style("border", "2px solid blue")
+  .attr("pointer-events", "all")
+.append('svg:g');
+  //.call(d3.behavior.zoom().on("zoom", redraw));
+  
+var svg = vis.append("svg")
+.attr("width", 1500)
+.attr("height", 700)
+.style("display", "block")
+.style("margin", "auto")
+.style("stroke", "#0033FF")
+.style("fill", "#F6F6F6")
+.style("border", "2px solid blue");
+
+
+	
+var link = svg.selectAll(".link"),
+    node = svg.selectAll(".node");
+
+d3.json("#{result.get(0).getJson()}", function(error, json) {
+  if (error) throw error;
+
+  root = json;
+ 
+ jsonAdd.push(root.name)
+var nodes=flatten(root);
+console.log("---");
+nodes.forEach(function(d) {
+
+	d.iswrite=false;
+   d.clicked=false;
+   d._children = d.children;
+   d.children = null;
+ });
+ update();
+ 
+});
+
+
+function update() {
+
+  var nodeS=duplicates(flatten(root));
+ var   linkS = d3.layout.tree().links(nodeS);
+
+  var nodes=flatten(root);
+  var   links = d3.layout.tree().links(nodes);
+  
+  node = svg.selectAll(".node");
+  link = svg.selectAll(".link");
+ 
+  // Restart the force layout.
+  force
+      .nodes(nodes)
+      .links(links)
+      .start();
+ 
+  // Update links.
+  link = link.data(links, function(d) { return d.target.id; });
+  link.exit().remove();
+
+  link.enter().insert("line", ".node")
+      .attr("class", "link");
+
+  // Update nodes.
+  node = node.data(nodes, function(d) { return d.id; });
+
+  node.exit().remove();
+
+  var nodeEnter = node.enter().append("g")
+      .attr("class", "node")
+      
+      .on("click", click)
+      .on("dblclick", dblclick)
+      .on("mouseover", function(d) {
+    	   if(d.name.indexOf("RFC")!=-1){
+            div.transition()        
+                .duration(200)      
+                .style("opacity", .9)     
+            div .html(d.title)  
+                .style("left", (d3.event.pageX) + "px")     
+                .style("top", (d3.event.pageY ) + "px")  
+      } })                  
+        .on("mouseout", function(d) {       
+            div.transition()        
+                .duration(500)      
+                .style("opacity", 0)   
+        })
+      .call(drag);
+
+  nodeEnter.append("circle")
+      .attr("r", function(d) { return 10.5; });
+
+  nodeEnter.append("text")
+      .attr("dy", ".35em")
+      .text(function(d) { return d.name; })
+      .style("fill", 'black')
+      .style("color", 'black')
+  .style("font-size","15px");
+
+  node.select("circle")
+      .style("fill", function(d) { return d.color; });
+  
+  
+}
+
+function tick() {
+  link.attr("x1", function(d) { return d.source.x; })
+      .attr("y1", function(d) { return d.source.y; })
+      .attr("x2", function(d) { return d.target.x; })
+      .attr("y2", function(d) { return d.target.y; });
+
+  node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+}
+
+function dblclick(d) {
+	  d3.select(this).classed("fixed", d.fixed = false);
+	}
+
+	function dragstart(d) {
+	  d3.select(this).classed("fixed", d.fixed = true);
+	}
+
+	function redraw() {
+		
+		  vis.attr("transform",
+		      "translate(" + d3.event.translate + ")"
+		      + " scale(" + d3.event.scale + ")");
+		}
+function color(d) {
+  return d._children ? "#3182bd" // collapsed package
+      : d.children ? "#c6dbef" // expanded package
+      : "#fd8d3c"; // leaf node
+}
+
+//function inizialize(d){
+//	if (d.children) {
+//	    d._children = d.children;
+//	    d.children = null;
+//	  } else {
+//	    d.children = d._children;
+//	    d._children = null;
+//	  }
+//	  update();
+//	}
+
+
+// Toggle children on click.
+function click(d) {
+	if(leaf(d) ){	  
+		  d.clicked=true;
+		  update();
+		 
+	  }
+	else{	
+  if(d.click==true){
+  
+  if (d.children) {
+	  d._children = d.children;
+	    d.children = null;
+	    d.click=false;
+    
+  } else {
+	  d.children = d._children;
+	    d._children = null;
+	    d.click=false;
+  
+  }
+  update(); }
+  else{
+  d.click=true;
+  update();    }}
+}
+
+function clicd(d) {
+	   
+	
+	  if (d.children) {
+		  d._children = d.children;
+		    d.children = null;
+	
+	  } else {
+		  d.children = d._children;
+		    d._children = null;
+	   
+	  }
+	  update();  
+	}
+
+
+function leaf(d) {
+	  return d._children ? false // collapsed package
+	      : d.children ? false // expanded package
+	      : true; // leaf node
+	}
+	
+
+function flattenBy(root) {
+	  var nodes = [];
+
+	  function recurse(node) {
+	    if (node.children) node.children.forEach(recurse);
+	    if(!node.id) node.id = Math.random();
+	    
+	    nodes.push(node);
+	  }
+
+	  recurse(root);
+	  return nodes;
+	}
+	
+function flatten(root) {
+  var nodes = [];
+
+  function recurse(node) {
+	    if (node.children) node.children.forEach(recurse);
+	    if(!node.id) node.id = Math.random();
+	    
+	    nodes.push(node);
+	  }
+
+	  recurse(root);
+	  return nodes;
+	}
+
+
+function addJson(name){
+	jsonAdd.push(name);	
+}
+
+function flatten(root) {
+var nodes = [];
+var visited=[];
+
+function recurse(node) {
+	if(visited.indexOf(node)==-1){
+		visited.push(node);
+		if (node.children){node.children.forEach(function(d) {if(visited.indexOf(d)==-1){recurse(d);visited.push(d);}})}
+		
+	
+  if(!node.id)node.id = Math.random();
+  if(leaf(node)&amp;node.clicked==true&amp;node.iswrite!=true){
+  	var nodesAdd=[];
+	  d3.json("../JSON/"+node.name+".json", function(error, json) {
+		  if (error) throw error;
+		  
+         	  
+		 
+
+		 var rootadd = json;
+
+		 
+		nodesAdd = flattenBy(rootadd);
+		
+	
+		node._children=rootadd.children;
+		rootadd.iswrite=false;
+		nodes.push(rootadd);
+		
+		//nodes.forEach(function(d) {
+	  	
+	  	
+		//index=nodes.indexOf(node);
+		 //nodes.splice(index, 1);
+		nodesAdd.forEach(function(d) {
+			
+			
+			d._children=d.children;
+			d.children=null;
+			d.clicked=false;
+			d.iswrite=false;
+			nodes.push(d);
+		})
+		
+		clicd(node);
+		}); 
+	  
+		if(jsonAdd.indexOf(node.name)==-1){jsonAdd.push(node.name);}
+		
+	}
+	  else{
+  	if(node.iswrite==false | node.iswrite==null){
+  	node.iswrite=true;
+  	nodes.push(node);}}
+}}
+
+recurse(root);
+nodes.forEach(function(d) {
+	d.iswrite=false;
+	})
+		//console.log("--------");
+//console.log("TROLOLOLOLO"+nodes.length);
+return nodes;
+}
+
+
+
+
+
+function findParent(nodeA,nodeS){
+	var parent;
+	
+nodeS.forEach(function(d) {
+	if(d.children!=null){
+d.children.forEach(function(c) {	
+ if(c.name==nodeA.name){ 
+	 console.log(d.name);
+	 return d;}
+ })}
+ 
+})
+
+
+}
+
+function duplicates(nodes){
+var array=nodes;
+var aut=[];
+for(i=0;i&lt;array.length;i++){
+    if(!leaf(nodes[i])&amp;nodes[i].name.indexOf("RFC")!=-1){
+    	
+    	nodes.forEach(function(d) {
+    	if(d.children!=null){
+    		d.children.forEach(function(c){
+    		if(c.id==nodes[i].id){  
+    		
+    			if(nodes[i].children!=null){
+    				
+    				nodes[i].children.forEach(function(a){ 
+    					
+    			if(a.name==d.name){
+    				
+    				nodes[i].children.splice(nodes[i].children.indexOf(a),1);
+        			nodes.splice(nodes.indexOf(a),1);
+
+    			
+    				}	})}}	}) 	}	})
+    			
+    		
+    		
+    	
+    	
+    	
+    	
+    }
+    //if(!leaf(nodes[i])){
+    if(nodes[i].name=="authors" &amp; nodes[i].dupl==null){
+    	aut.push(nodes[i]);	
+    }
+    //}
+   
+	} 
+if(aut.length!=0){
+	var h,i,j,w;
+	var remover=[];
+	for(i=0;i&lt;aut.length;i++){
+	
+	 var nodoBase=aut[i];
+	 
+	 if(nodoBase.children!=null){
+	 for(h=0;h &lt;nodoBase.children.length;h++){
+		 var figlioBase=nodoBase.children[h];
+		
+		 for(j=i+1;j&lt;aut.length;j++){
+			 var nodoSuccessivo=aut[j];
+			
+			 if(nodoSuccessivo.children!=null){
+		  for(w=0;w &lt;nodoSuccessivo.children.length;w++)	 {
+			  var figlioSuccessivo=nodoSuccessivo.children[w];
+			  var node={base:nodoBase,figlio:figlioBase,Succ:figlioSuccessivo};
+			 
+			  if(figlioBase.name==figlioSuccessivo.name){
+				  var node={base:nodoBase,figlio:figlioBase,Succ:figlioSuccessivo};
+				  nodoBase.dupl=true;
+				//  console.log(figlioBase.name);
+				  //node.base=nodoBase;
+				  //node.figlio=figlioBase;
+				  //node.Succ=figlioSuccessivo;
+				  remover.push(node);
+				  //nodes[nodes.indexOf(nodoBase)].children.splice(nodoBase.children.indexOf(figlioBase,1));
+				  //nodes[nodes.indexOf(nodoSuccessivo)].children.push();
+				  //nodoSuccessivo.children.splice(nodoSuccessivo.children.indexOf(figlioSuccessivo,1));
+				  //nodes[nodes.indexOf(nodoBase)].children.push(figlioSuccessivo);
+				  //nodoSuccessivo.children.push(figlioBase);
+			  }
+			  else if(figlioBase.name!=figlioSuccessivo.name){
+				  var find=false;
+				  remover.forEach(function(d){
+					if(d.Succ!=null){
+					if(d.Succ.name!=figlioBase)	 find=true; }})
+					
+				  if(find==true){
+				  var node={base:nodoBase,figlio:null,Succ:figlioBase};
+				  remover.push(node);}
+			  }
+			  
+		 }}
+			 
+	 }
+	 
+		 
+	 
+	 
+	}	}
+	
+}   
+	for(f=0;f &lt;remover.length;f++)	 {
+		if(remover[f].figlio!=null){
+
+		nodes[nodes.indexOf(remover[f].base)].children.splice(remover[f].base.children.indexOf(remover[f].figlio));
+		
+			}}
+	for(f=0;f &lt;remover.length;f++)	 {
+		
+		  if((nodes[nodes.indexOf(remover[f].base)].children.indexOf(remover[f].Succ))==-1){
+			  
+			nodes[nodes.indexOf(remover[f].base)].children.push(remover[f].Succ);}
+				}
+	
+	}
+
+nodes.forEach(function(d){
+	//trovo group
+	if(d.name.indexOf("group")!=-1){
+	if(d.children!=null){
+		//Scorro tutti gli rfc
+		d.children.forEach(function(g){
+			//Scorro i nodi
+		nodes.forEach(function(n){
+			//se tra i nodi è presente un rfc con lo stesso node in group
+			if(n.name.indexOf("RFC")!=-1 &amp; n.name==g.name &amp; n.id!=g.id){
+			//lo rimuovo dai children e dai nodes.
+			
+			d.children.splice(d.children.indexOf(g),1);
+			nodes.splice(nodes.indexOf(g),1); }})	})}	}});
+			
+		
+nodes.forEach(function(d){
+	//trovo group
+	if(d.name.indexOf("authors")!=-1){
+	if(d.children!=null){
+		var i,j;
+		for(i=0;i &lt;d.children.length;i++){
+		for(j=i+1;j &lt;d.children.length;j++)	{
+		if(d.children[i].name==d.children[j].name &amp; d.children[i].id!=d.children[j].id){
+			console.log(d.children[j].name);
+			d.children.splice(d.children.indexOf(d.children[j]),1);
+			nodes.splice(nodes.indexOf(d.children[j]),1);	}}}}}});
+
+	
+	
+
+return nodes;}
+
+
+
+
+
+
+</script>
+
+
+
+  
+ 
+  		
+ <div style="width:1500px;"> 		
+<h:panelGrid columns="8">
+<c:set var="currentPage" value="#{searcherBean.currentPage.number}" />
+
+			<h:panelGroup>
+				<h:commandButton value="back" image="/image/arrowBack.png"
+					outcome="search" action="#{searcherBean.goToPage(currentPage-1)}" />
+					
+			</h:panelGroup>
+
+			<ui:repeat var="pagePrev" value="#{searcherBean.linkedPagesPrev}">
+				<h:panelGroup>
+					<c:set var="numberPrev" value="#{pagePrev.number}" />
+					<h:commandLink value="#{pagePrev.number}"
+						action="#{searcherBean.goToPage(numberPrev)}" />
+					<h:outputText value="&#160;" />
+				</h:panelGroup>
+			</ui:repeat>
+			<h:panelGroup>
+				<h:outputText value="#{searcherBean.currentPage.number}"
+					style="font-weight:bold" />
+			</h:panelGroup>
+
+			<ui:repeat var="pageNext" value="#{searcherBean.linkedPagesNext}">
+				<h:panelGroup>
+					<c:set var="numberNext" value="#{pageNext.number}" />
+					<h:commandLink value="#{pageNext.number}"
+						action="#{searcherBean.goToPage(numberNext)}" />
+					<h:outputText value="&#160;" />
+				</h:panelGroup>
+			</ui:repeat>
+
+			<h:panelGroup>
+				<h:commandButton value="next" image="/image/arrowNext.png"
+					outcome="search" action="#{searcherBean.goToPage(currentPage+1)}" />
+				 </h:panelGroup>
+			<h:panelGroup>
+			<h1>
+			
+		
+			
+			</h1>
+		
+			 </h:panelGroup>
+			
+		</h:panelGrid>
+</div>
+</div>
+
+
+	</h:form>
+	<br />
+
+
+</h:body>
+</html>

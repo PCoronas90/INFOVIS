@@ -1,0 +1,668 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:h="http://java.sun.com/jsf/html"
+	xmlns:ui="http://java.sun.com/jsf/facelets"
+	xmlns:c="http://java.sun.com/jstl/core"
+		xmlns:f="http://java.sun.com/jsf/core"    >
+
+	
+<head>
+ 	<title>RFC Searcher</title>
+ 	<link href="stile2.css" rel="stylesheet" type="text/css" />
+</head>
+
+<h:body>	
+
+	<h:form>
+		
+		<div id="container">
+		
+			<h:panelGroup>
+			<div class="box left">
+			<h:graphicImage id="logo" value="/image/logoSearch.png" width="70" height="70" margin-left="2000" />
+				</div>
+				<div class="box center">
+				<h:inputText value="#{searcherBean.originalQuery}" size="50" required="true" requiredMessage="Inserisci una query" />
+				</div>
+				<div class="box center2">
+				
+				</div>
+				<div class="box right1">
+				<h:commandButton value="Go!" action="#{searcherBean.search}" image="/image/cerca.png" />
+				</div>
+				<div class="box right2">
+				<h:commandButton value="Go!" action="#{searcherBean.searchAuthor}" image="/image/lucky2.png"/>
+					
+				<div class="box right3">
+				<h:commandButton value="Go!" action="#{searcherBean.searchKeyword}" image="/image/key.png"/>
+				
+		</div>
+			</div>
+			
+			</h:panelGroup>
+	
+		</div>
+<div class="result">
+<h:panelGroup layout="block" style="width: 1380px;text-align: top;margin-top:20px;">    
+			Select Status :
+			<h:selectBooleanCheckbox value="#{searcherBean.informational}"  /> Informational
+			<h:selectBooleanCheckbox value="#{searcherBean.unknown}" /> Unknown
+			<h:selectBooleanCheckbox value="#{searcherBean.historic}" /> Historic
+			<h:selectBooleanCheckbox value="#{searcherBean.experimental}" /> Experimental
+			<h:selectBooleanCheckbox value="#{searcherBean.bestcurrent}" /> BestCurrentPractice
+			<h:selectBooleanCheckbox value="#{searcherBean.proposedstandard}" /> Proposed Standard
+			<h:selectBooleanCheckbox value="#{searcherBean.draftstandard}" /> Draft Standard
+			<h:selectBooleanCheckbox value="#{searcherBean.internetstandard}" /> Internet Standard
+			|| Select year : 
+			<h:selectOneMenu value="#{searcherBean.selectDateFrom}"> 
+			    
+		 From <f:selectItem itemLabel="Any" itemValue="0" />
+	            <f:selectItems value="#{searcherBean.datesFrom}" />
+        </h:selectOneMenu>
+        <h:selectOneMenu value="#{searcherBean.selectDateTo}">
+		 To <f:selectItem itemLabel="Any" itemValue="0" />
+	            <f:selectItems value="#{searcherBean.datesTo}" />
+        </h:selectOneMenu>
+	         </h:panelGroup>			
+		<br /><br /><span style="color: grey"> Risultati trovati per <b>"#{searcherBean.originalQuery}"</b>: #{searcherBean.numberOfResults} (#{searcherBean.searchTime} millisecondi)</span>
+
+<br /><br />
+ <img src="image/Legenda1.png" />
+ <script src="./sigma.min.js"></script>
+ <c:set var="currentPage" value="#{searcherBean.currentPage}" />
+
+		<c:set var="result" value="#{currentPage.results}"/>
+		
+ 
+			
+		
+ 
+
+ <div id="sig" style="width:1500px;height:1000px;position:center;border:1px solid black"></div> 
+  <ui:repeat var="result" value="#{currentPage.results}">
+   </ui:repeat>
+  <script>
+  
+  sigma.classes.graph.addMethod('neighbors', function(nodeId) {
+	    var k,
+	        neighbors = {},
+	        index = this.allNeighborsIndex[nodeId] || {};
+
+	    for (k in index)
+	      neighbors[k] = this.nodesIndex[k];
+
+	    return neighbors;
+	  });
+  
+  function visN(s) {
+      // We first need to save the original colors of our
+      // nodes and edges, like this:
+      s.graph.nodes().forEach(function(n) {
+        n.originalColor = n.color;
+        n.originalLabel=n.label;
+        n.originalHidden=n.hidden;
+      });
+      s.graph.edges().forEach(function(e) {
+        e.originalColor = e.color;
+      });
+
+      // When a node is clicked, we check for each node
+      // if it is a neighbor of the clicked one. If not,
+      // we set its color as grey, and else, it takes its
+      // original color.
+      // We do the same for the edges, and we only keep
+      // edges that have both extremities colored.
+      s.bind('clickNode', function(e) {
+        var nodeId = e.data.node.id,
+            toKeep = s.graph.neighbors(nodeId);
+        toKeep[nodeId] = e.data.node;
+
+        s.graph.nodes().forEach(function(n) {
+          if (toKeep[n.id]){
+        	  if( n.originalHidden==true){
+            	  n.hidden=false;        	  
+              }
+        	  if(n.color=='#FFFFFF'){   
+        		  n.color='#0000FF';
+        	  }
+        	  else{
+            n.color = n.originalColor;
+          n.label=n.originalLabel;}}
+          
+          else{
+            n.color = '#FFFFFF';
+            n.label="    ";}
+        });
+
+        s.graph.edges().forEach(function(e) {
+          if (toKeep[e.source])
+        	  if(toKeep[e.target])
+        		  if(e.color=='#FFFFFF') 
+        			  e.color='#0000FF';
+        		  else
+                      e.color = e.originalColor;
+          else
+            e.color = '#FFFFFF';
+        });
+
+        // Since the data has been modified, we need to
+        // call the refresh method to make the colors
+        // update effective.
+        s.refresh();
+      });
+
+      // When the stage is clicked, we just color each
+      // node and edge with its original color.
+      s.bind('clickStage', function(e) {
+        s.graph.nodes().forEach(function(n) {
+          n.color = n.originalColor;
+          n.label=n.originalLabel;
+          n.hidden=n.originalHidden;
+        });
+
+        s.graph.edges().forEach(function(e) {
+          e.color = e.originalColor;
+        });
+
+        // Same as in the previous event:
+        s.refresh();
+      });
+    }
+  ;
+    	
+     
+    	var s = new sigma('sig');
+    	 var resultSize="#{result.size()}";
+    	
+    	
+         var i=0; 
+         s.graph.addNode({
+             // Main attributes:
+             id: 'n900',
+            
+             
+            
+             // Display attributes:
+            x: -70050,
+               y:-22000,
+             size: 18,
+             color: '#FFFFFF'
+           }); 
+        
+        s.graph.addNode({
+            // Main attributes:
+            id: 'n1',
+            label: "#{result.get(0).getAuthor()}".toUpperCase()+" |Number of documents:"+"#{currentPage.results.size()}",
+           x: -2500,
+              y:1200,
+            size: 25,
+            color: '#FF0000'
+          }).addEdge({
+              id: '900',
+              hidden:true,
+              
+              // Reference extremities:
+              	
+              source: 'n1',
+              target:  'n900'
+            });
+
+        s.camera.goTo({
+            x: -1800,
+            y: 1200,
+            angle: 0,
+            ratio: 1
+          });
+    
+    s.settings({
+        autoRescale: false,
+        zoomMax: 6
+       
+    } );
+    	
+    // Finally, let's ask our sigma instance to refresh:
+    visN(s);
+    	s.refresh();
+   
+   var i=0;
+   var j=-250;
+   var insered=1;
+   
+  
+  </script>
+  
+  <ui:repeat var="results" value="#{currentPage.results}">
+  
+			
+			 <script>
+			 var dim = 150;			
+			  s.graph.addNode({
+            // Main attributes:
+            id: i.toString(),
+            label: "#{results.title}",
+            
+           
+            // Display attributes:
+            x: -100,
+            y:i,
+            size: 20,
+            color: '#0000FF'
+            
+          }).addEdge({
+              id: i.toString(),
+              
+              color: "#FFFF00", 	
+              source: 'n1',
+              target:  i.toString()
+            }).addNode({
+                // Main attributes:
+                id: i.toString()+1,
+                label: "Status:" +"#{results.status}",
+                hidden: true,
+                
+               
+                // Display attributes:
+                x: 1200,
+                y:i+100,
+                size: 20,
+                color: '#FF6600'
+                
+              }).addEdge({
+                  id: i.toString()+1,                  
+                  // Reference extremities:
+                 
+                  source: i.toString(),
+                  target:  i.toString()+1
+                }).addNode({
+                    // Main attributes:
+                    id: i.toString()+2,
+                    label: "Date:" +"#{results.date}",
+                    hidden: true,
+                    
+                   
+                    // Display attributes:
+                    x: 1200,
+                    y:i+200,
+                    size: 20,
+                    color: '#00CC00'
+                    
+                  }).addEdge({
+                      id: i.toString()+2,                  
+                      // Reference extremities:
+                     
+                      source: i.toString(),
+                      target:  i.toString()+2
+                    }).addNode({
+                        // Main attributes:
+                        id: i.toString()+3,
+                        label: "Number of page:" +"#{results.page}",
+                        hidden: true,
+                        
+                       
+                        // Display attributes:
+                        x: 1200,
+                        y:i+300,
+                        size: 20,
+                        color: '#660099'
+                        
+                      }).addEdge({
+                          id: i.toString()+3,                  
+                          // Reference extremities:
+                          
+                          source: i.toString(),
+                          target:  i.toString()+3
+                        }).addNode({
+                            // Main attributes:
+                            id: i.toString()+4,
+                            label: "ID:" +"#{results.DOCID}",
+                            hidden: true,
+                            
+                           
+                            // Display attributes:
+                            x: 1200,
+                            y:i+400,
+                            size: 20,
+                            color: '#3399FF'
+                            
+                          }).addEdge({
+                              id: i.toString()+4,                  
+                              // Reference extremities:
+                             
+                              source: i.toString(),
+                              target:  i.toString()+4
+                            }).addNode({
+                                // Main attributes:
+                                id: i.toString()+5,
+                                label: "Stream:" +"#{results.streamDoc}",
+                                hidden: true,
+                                
+                               
+                                // Display attributes:
+                                x: 1200,
+                                y:i+500,
+                                size: 20,
+                                color: '#0000'
+                                
+                              }).addEdge({
+                                  id: i.toString()+5,                  
+                                  // Reference extremities:
+                                
+                                  source: i.toString(),
+                                  target:  i.toString()+5,
+                                }).addNode({
+                                    // Main attributes:
+                                    id: i.toString()+6,
+                                    label: "doi:" +"#{results.doi}",
+                                    hidden: true,
+                                    
+                                   
+                                    // Display attributes:
+                                    x: 1200,
+                                    y:i+600,
+                                    size: 20,
+                                    color: '#660000'
+                                    
+                                  }).addEdge({
+                                      id: i.toString()+11,                  
+                                      // Reference extremities:
+                                     
+                                      source: i.toString(),
+                                      target:  i.toString()+6,
+                                    }).addNode({
+                                        // Main attributes:
+                                        id: i.toString()+18,
+                                        label: "Keywords:" +"#{results.getKeyword()}",
+                                        hidden: true,
+                                        
+                                       
+                                        // Display attributes:
+                                        x: 1200,
+                                        y:i+700,
+                                        size: 20,
+                                        color: '#336600'
+                                        
+                                      }).addEdge({
+                                          id: i.toString()+18,                  
+                                          // Reference extremities:
+                                         
+                                          source: i.toString(),
+                                          target:  i.toString()+18,
+                                        }).addNode({
+                                        // Main attributes:
+                                        id: i.toString()+7,
+                                        label: "Obsolete-by:" +"#{results.getObsoleteByNumber()}",
+                                        hidden: true,
+                                        x: 1200,
+                                        y:i+800,
+                                        size: 20,
+                                        color: "#FF0099"
+                                        
+                                      }).addEdge({
+                                          id: i.toString()+7,                  
+                                          // Reference extremities:
+                                         
+                                          source: i.toString(),
+                                          target:  i.toString()+7,
+                                        }).addNode({
+                                            // Main attributes:
+                                            id: i.toString()+8,
+                                            label: "Updated-by:" +"#{results.getUpdatedByNumber()}",
+                                            hidden: true,
+                                            x: 1200,
+                                            y:i+900,
+                                            size: 20,
+                                            color: "#FF0099"
+                                            
+                                          }).addEdge({
+                                              id: i.toString()+8,                  
+                                              // Reference extremities:
+                                             
+                                              source: i.toString(),
+                                              target:  i.toString()+8,
+                                            }).addNode({
+                                                // Main attributes:
+                                                id: i.toString()+9,
+                                                label: "Obsoletes:" +"#{results.getObsoleteNumber()}",
+                                                hidden: true,
+                                                x: 1200,
+                                                y:i+1000,
+                                                size: 20,
+                                                color:"#FF0099"
+                                                
+                                              }).addEdge({
+                                                  id: i.toString()+9,                  
+                                                  // Reference extremities:
+                                                 
+                                                  source: i.toString(),
+                                                  target:  i.toString()+9,
+                                                }).addNode({
+                                                    // Main attributes:
+                                                    id: i.toString()+10,
+                                                    label: "Updateds:" +"#{results.getUpdatedNumber()}",
+                                                    hidden: true,
+                                                    x: 1200,
+                                                    y:i+1100,
+                                                    size: 20,
+                                                    color: "#FF0099"
+                                                    
+                                                  }).addEdge({
+                                                      id: i.toString()+10,                  
+                                                      // Reference extremities:
+                                                     
+                                                      source: i.toString(),
+                                                      target:  i.toString()+10,
+                                                    })
+                                                ;;
+			
+                                                var h=0;
+            
+                                                </script>
+              <ui:repeat var="obsoleteBy" value="#{results.getObsoleteBy()}">
+              <script>
+               
+            	var id=Math.random();
+            	var g=100;
+            	//var titles=#{results.getObsoleteBy().get(h).title};
+            	
+            	
+            	s.graph.addNode({
+            	     // Main attributes:
+            	     id: id.toString(),
+            	     label: "#{obsoleteBy.title}",
+            	     hidden: true,
+            	     x: 1700,
+            	     y:i+1100+g*h,
+            	     size: 20,
+            	     color: '#0000FF'
+            	     
+            	   }).addEdge({
+                       id: id.toString()+10,                  
+                       // Reference extremities:
+                      
+                       source: i.toString()+7,
+                       target:  id.toString(),
+                     });; 
+            	     s.refresh(); 
+            	
+            
+           
+          h++;
+            
+            visN(s);
+            s.refresh();
+            
+          </script>
+
+
+ </ui:repeat>
+ 
+   <ui:repeat var="updatedBy" value="#{results.getUpdatedBy()}">
+              <script>
+               
+            	var id2=Math.random();
+            	var g=100;
+            	//var titles=#{results.getObsoleteBy().get(h).title};
+            	
+            	
+            	s.graph.addNode({
+            	     // Main attributes:
+            	     id: id2.toString(),
+            	     label: "#{updatedBy.title}",
+            	     hidden: true,
+            	     x: 1700,
+            	     y:i+1200+g*h,
+            	     size: 20,
+            	     color: '#0000FF'
+            	     
+            	   }).addEdge({
+                       id: id2.toString(),                  
+                       // Reference extremities:
+                      
+                       source: i.toString()+8,
+                       target:  id2.toString(),
+                     });; 
+            	     s.refresh(); 
+            	
+            
+           
+          h++;
+            
+            visN(s);
+            s.refresh();
+            
+          </script>
+
+
+ </ui:repeat>
+ <ui:repeat var="obsolete" value="#{results.getObsolete()}">
+              <script>
+               
+            	var id3=Math.random();
+            	var g=100;
+            	//var titles=#{results.getObsoleteBy().get(h).title};
+            	
+            	
+            	s.graph.addNode({
+            	     // Main attributes:
+            	     id: id3.toString(),
+            	     label: "#{obsolete.title}",
+            	     hidden: true,
+            	     x: 1700,
+            	     y:i+1100+g*h,
+            	     size: 20,
+            	     color: '#0000FF'
+            	     
+            	   }).addEdge({
+                       id: id3.toString()+10,                  
+                       // Reference extremities:
+                      
+                       source: i.toString()+9,
+                       target:  id3.toString(),
+                     });; 
+            	     s.refresh(); 
+            	
+            
+           
+          h++;
+            
+            visN(s);
+            s.refresh();
+            
+          </script>
+
+
+ </ui:repeat>
+  <ui:repeat var="updated" value="#{results.getUpdated()}">
+              <script>
+               
+            	var id4=Math.random();
+            	var g=100;
+            	//var titles=#{results.getObsoleteBy().get(h).title};
+            	
+            	
+            	s.graph.addNode({
+            	     // Main attributes:
+            	     id: id4.toString(),
+            	     label: "#{updated.title}",
+            	     hidden: true,
+            	     x: 1700,
+            	     y:i+1200+g*h,
+            	     size: 20,
+            	     color: '#0000FF'
+            	     
+            	   }).addEdge({
+                       id: id4.toString(),                  
+                       // Reference extremities:
+                      
+                       source: i.toString()+10,
+                       target:  id4.toString(),
+                     });; 
+            	     s.refresh(); 
+            	
+            
+           
+          h++;
+            
+            visN(s);
+            s.refresh();
+            
+          </script>
+
+
+ </ui:repeat>
+ <script>
+ insered++;
+ 
+ i=i+120;
+ j=j+100;
+ visN(s);
+ s.refresh();</script>
+  </ui:repeat>
+
+<h:panelGrid columns="5">
+<c:set var="currentPage" value="#{searcherBean.currentPage.number}" />
+
+			<h:panelGroup>
+				<h:commandButton value="back" image="/image/arrowBack.png"
+					outcome="searchAuthor" action="#{searcherBean.goToPageAuthor(currentPage-1)}" />
+					
+			</h:panelGroup>
+
+			<ui:repeat var="pagePrev" value="#{searcherBean.linkedPagesPrev}">
+				<h:panelGroup>
+					<c:set var="numberPrev" value="#{pagePrev.number}" />
+					<h:commandLink value="#{pagePrev.number}"
+						action="#{searcherBean.goToPageAuthor(numberPrev)}" />
+					<h:outputText value="&#160;" />
+				</h:panelGroup>
+			</ui:repeat>
+			<h:panelGroup>
+				<h:outputText value="#{searcherBean.currentPage.number}"
+					style="font-weight:bold" />
+			</h:panelGroup>
+
+			<ui:repeat var="pageNext" value="#{searcherBean.linkedPagesNext}">
+				<h:panelGroup>
+					<c:set var="numberNext" value="#{pageNext.number}" />
+					<h:commandLink value="#{pageNext.number}"
+						action="#{searcherBean.goToPageAuthor(numberNext)}" />
+					<h:outputText value="&#160;" />
+				</h:panelGroup>
+			</ui:repeat>
+
+			<h:panelGroup>
+				<h:commandButton value="next" image="/image/arrowNext.png"
+					outcome="searchAuthor" action="#{searcherBean.goToPageAuthor(currentPage+1)}" />
+			</h:panelGroup>
+
+		</h:panelGrid>
+</div>
+
+
+	</h:form>
+	<br />
+
+
+</h:body>
+</html>

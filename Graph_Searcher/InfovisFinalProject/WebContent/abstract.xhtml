@@ -1,0 +1,20 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:h="http://java.sun.com/jsf/html"
+	xmlns:ui="http://java.sun.com/jsf/facelets"
+	xmlns:c="http://java.sun.com/jstl/core">
+<head>
+
+
+</head>
+<body>
+<c:set var="currentPage" value="#{searcherBean.currentPage}" />
+
+		<c:set var="result" value="#{currentPage.results}"/>
+ 
+<div id="abstract" style="float:left; display:block; width:500px; height:450px;">
+ <h2 style="color: black;text-align: center"> <b>#{result.get(0).getTitle()} </b> </h2><br></br> 
+ <h3>Abstract:</h3> <b style="border:1px">#{result.get(0).getAbstract()}</b></div> 
+</body>
+</html>

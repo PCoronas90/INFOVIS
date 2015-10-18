@@ -1,0 +1,70 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:h="http://java.sun.com/jsf/html"
+	xmlns:ui="http://java.sun.com/jsf/facelets"
+	xmlns:c="http://java.sun.com/jstl/core"
+		xmlns:f="http://java.sun.com/jsf/core"    >
+<head>
+ 	<title>RFC Searcher</title>
+ 	<link href="stile.css" rel="stylesheet" type="text/css" />
+</head>
+<h:body>
+	
+	<h:form>
+		<br />
+		<div align="center">
+
+			<h:graphicImage value="/image/logoSearch.png" width="200" height="200" />
+			<br />
+			<h:inputText value="#{searcherBean.originalQuery}" size="80" required="true" requiredMessage="Inserisci una query" />
+			<div class="index">
+			
+			
+			
+			
+			
+			
+	
+			</div>
+			<br />
+			<h:commandButton value="Go!" action="#{searcherBean.search}"
+				image="/image/cerca2.png" />
+			
+			<br></br>
+			<br></br>
+			<h3 style="color:blue">Select Status</h3>
+			
+			<h:selectBooleanCheckbox value="#{searcherBean.informational}" /> Informational
+			<h:selectBooleanCheckbox value="#{searcherBean.unknown}" /> Unknown
+			<h:selectBooleanCheckbox value="#{searcherBean.historic}" /> Historic
+			<h:selectBooleanCheckbox value="#{searcherBean.experimental}" /> Experimental
+			<h:selectBooleanCheckbox value="#{searcherBean.bestcurrent}" /> Best Current Practice
+			<h:selectBooleanCheckbox value="#{searcherBean.proposedstandard}" /> Proposed Standard
+			<h:selectBooleanCheckbox value="#{searcherBean.draftstandard}" /> Draft Standard
+			<h:selectBooleanCheckbox value="#{searcherBean.internetstandard}" /> Internet Standard
+			
+			<br></br>
+			<br></br>
+			 <h3 style="color:blue">Select Year</h3>
+			<br></br>
+			<h:selectOneMenu value="#{searcherBean.selectDateFrom}">
+		 From <f:selectItem itemLabel="Any" itemValue="0" />
+	            <f:selectItems value="#{searcherBean.datesFrom}" />
+        </h:selectOneMenu>
+        <h:selectOneMenu value="#{searcherBean.selectDateTo}">
+		 To <f:selectItem itemLabel="Any" itemValue="0" />
+	            <f:selectItems value="#{searcherBean.datesTo}" />
+        </h:selectOneMenu>
+        
+
+		</div>
+		
+		 
+
+	</h:form>
+	<div id="footer">
+		
+	</div>
+</h:body>
+</html>
